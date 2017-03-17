@@ -1,0 +1,43 @@
+box: continuumio/miniconda3:latest
+# This is the build pipeline. Pipelines are the core of wercker
+# Read more about pipelines on our dev center
+# http://devcenter.wercker.com/docs/pipelines/index.html
+build:
+  # The steps that will be executed on build
+  # Steps make up the actions in your pipeline
+  # Read more about steps on our dev center:
+  # http://devcenter.wercker.com/docs/steps/index.html
+  steps:
+    - add-to-known_hosts:
+        hostname: bitbucket.org
+        fingerprint: 97:8c:1b:f2:6f:14:6b:5c:3b:ec:aa:46:46:74:7c:40
+        type: rsa
+
+    - script:
+        name: update package source mirror
+        code: sed -i 's/httpredir.debian.org/cloudfront.debian.net/g' /etc/apt/sources.list
+
+    - install-packages:
+        packages: libpq-dev gcc g++
+
+    - script:
+        name: install requirements
+        code: |
+          conda install --file requirements.txt --yes
+          pip install -r requirements_pip.txt
+          pip install -r requirements_test.txt
+
+    - script:
+        name: install sparseflow
+        code: |
+          python setup.py install
+
+    - script:
+        name: echo working path
+        code: |
+          echo "working path = $(pwd)"
+
+    - script:
+        name: run tests
+        code: |
+          py.test sparseflow --flake8
